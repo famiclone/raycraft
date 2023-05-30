@@ -8,3 +8,5 @@ pub trait Drawable {
 pub trait Updatable {
     fn update(&mut self, dt: f32);
 }
+
+pub trait DrawableUpdatable: Drawable + Updatable {}
