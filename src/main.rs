@@ -1,19 +1,13 @@
-const VERSION: &str = "0.1.0";
 
 extern crate sdl2;
 
 use sdl2::event::Event;
 use sdl2::keyboard::Keycode;
 use sdl2::pixels::Color;
-use sdl2::rect::Rect;
-use sdl2::render::Canvas;
-use sdl2::ttf::Font;
-use sdl2::video::Window;
-use std::path::Path;
 use std::time::{Duration, Instant};
 
 mod traits;
-use traits::{Drawable, DrawableUpdatable, Movable, Updatable};
+use traits::Movable;
 mod player;
 use player::Player;
 
@@ -23,6 +17,12 @@ use controller::KeyboardState;
 mod scene_manager;
 use scene_manager::{Entity, Scene, SceneManager};
 
+mod debugger;
+use debugger::Debugger;
+
+mod renderer;
+use renderer::Renderer;
+
 const WINDOW_WIDTH: u32 = 800;
 const WINDOW_HEIGHT: u32 = 600;
 
@@ -31,76 +31,19 @@ const WINDOW_HEIGHT: u32 = 600;
 
 //type Map = [u8; (MAP_WIDTH as usize) * (MAP_HEIGHT as usize)];
 
-struct Sprite<'a> {
-    width: u32,
-    height: u32,
-    texture: sdl2::render::Texture<'a>,
-}
-
-fn debug(
-    canvas: &mut Canvas<Window>,
-    scene_manager: &mut SceneManager,
-    font: &Font,
-    dt: f32,
-    counter: &mut f32,
-) {
-    let color = Color::RGB(255, 255, 255);
-    let text = format!(
-        "FPS: {:.1}{}SCENE: {}",
-        1.0 / dt,
-        "\n",
-        scene_manager.get_current_scene().unwrap().name
-    );
-
-    let lines: Vec<&str> = text.lines().collect();
-
-    let surface = font.render(lines[0]).blended(color).unwrap();
-
-    for line in lines.iter().skip(1) {
-        let line_surface = font.render(line).blended(color).unwrap();
-    }
-
-    let texture_creator = canvas.texture_creator();
-    let texture = texture_creator
-        .create_texture_from_surface(&surface)
-        .unwrap();
-    let texture_query = texture.query();
-
-    canvas
-        .copy(
-            &texture,
-            None,
-            Some(Rect::new(0, 0, texture_query.width, texture_query.height)),
-        )
-        .unwrap();
-}
 
 fn main() {
     let mut last_time = Instant::now();
     let target_frame_duration = Duration::from_secs_f32(1.0 / 60.0);
 
     let ctx = sdl2::init().unwrap();
-    let video_subsystem = ctx.video().unwrap();
-    let ttf_context = sdl2::ttf::init().unwrap();
-    let font_path = Path::new("assets/fonts/font.ttf");
-    let font_size = 16;
-    let font = ttf_context.load_font(font_path, font_size).unwrap();
-
-    let window = video_subsystem
-        .window(
-            format!("raycraft {}", VERSION).as_str(),
-            WINDOW_WIDTH,
-            WINDOW_HEIGHT,
-        )
-        .position_centered()
-        .build()
-        .unwrap();
+    let mut renderer = Renderer::new(ctx, WINDOW_WIDTH, WINDOW_HEIGHT);
 
     let mut counter: f32 = 0.0;
-    let mut canvas = window.into_canvas().build().unwrap();
-    let mut player: Entity = Entity::Player(Player::new(0.0, 0.0));
-    let mut event_pump = ctx.event_pump().unwrap();
+    let player: Entity = Entity::Player(Player::new(0.0, 0.0));
     let mut keyboard_state = KeyboardState::new();
+    let ttf_context = sdl2::ttf::init().unwrap();
+    let debugger = Debugger::new(&ttf_context);
 
     let mut scene_manager = SceneManager::new();
     let mut main_scene = Scene::new("main");
@@ -118,7 +61,7 @@ fn main() {
             counter = 0.0;
         }
 
-        for event in event_pump.poll_iter() {
+        for event in renderer.event_pump.poll_iter() {
             match event {
                 Event::Quit { .. }
                 | Event::KeyDown {
@@ -189,23 +132,21 @@ fn main() {
                     .unwrap()
                     .stop_horizontal();
             }
-
         }
 
-        canvas.set_draw_color(Color::RGB(0, 0, 0));
-        canvas.clear();
+        renderer.canvas.set_draw_color(Color::RGB(0, 0, 0));
+        renderer.clear();
 
         scene_manager.update(dt.as_secs_f32());
-        scene_manager.draw(&mut canvas);
+        scene_manager.draw(&mut renderer.canvas);
 
-        debug(
-            &mut canvas,
-            &mut scene_manager,
-            &font,
-            dt.as_secs_f32(),
-            &mut counter,
+        debugger.render_text(
+            &mut renderer.canvas,
+            "Hello, world!",
+            sdl2::rect::Point::new(0, 0),
+            sdl2::pixels::Color::RGB(255, 255, 255),
         );
-        canvas.present();
+        renderer.present();
 
         last_time = now;
         let frame_duration = Instant::now().duration_since(last_time);

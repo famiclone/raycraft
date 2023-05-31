@@ -1,7 +1,7 @@
 use sdl2::render::Canvas;
 use sdl2::video::Window;
 
-use crate::{traits::{Drawable, DrawableUpdatable, Updatable, Person}, player::Player};
+use crate::{traits::{Drawable, DrawableUpdatable, Updatable }, player::Player};
 
 pub enum Entity {
     Generic(Box<dyn DrawableUpdatable>),
@@ -60,22 +60,6 @@ impl Scene {
 pub struct SceneManager {
     scenes: Vec<Scene>,
     current_scene_name: Option<&'static str>,
-}
-
-impl Updatable for SceneManager {
-    fn update(&mut self, dt: f32) {}
-}
-
-impl Drawable for SceneManager {
-    fn draw(&self, canvas: &mut Canvas<Window>) {
-        if let Some(scene) = self.current_scene_name {
-            for s in &self.scenes {
-                if s.name == scene {
-                    s.draw(canvas);
-                }
-            }
-        }
-    }
 }
 
 impl SceneManager {
