@@ -6,6 +6,9 @@ use sdl2::event::Event;
 use sdl2::keyboard::Keycode;
 use sdl2::pixels::Color;
 use sdl2::rect::Rect;
+use sdl2::render::Canvas;
+use sdl2::ttf::Font;
+use sdl2::video::Window;
 use std::path::Path;
 use std::time::{Duration, Instant};
 
@@ -31,9 +34,47 @@ struct Sprite<'a> {
     texture: sdl2::render::Texture<'a>,
 }
 
+fn debug(
+    canvas: &mut Canvas<Window>,
+    scene_manager: &mut SceneManager,
+    font: &Font,
+    dt: f32,
+    counter: &mut f32,
+) {
+    let color = Color::RGB(255, 255, 255);
+    let text = format!(
+        "FPS: {:.1}{}SCENE: {}",
+        1.0 / dt,
+        "\n",
+        scene_manager.get_current_scene().unwrap().name
+    );
+
+    let lines: Vec<&str> = text.lines().collect();
+
+    let surface = font.render(lines[0]).blended(color).unwrap();
+
+    for line in lines.iter().skip(1) {
+        let line_surface = font.render(line).blended(color).unwrap();
+    }
+
+    let texture_creator = canvas.texture_creator();
+    let texture = texture_creator
+        .create_texture_from_surface(&surface)
+        .unwrap();
+    let texture_query = texture.query();
+
+    canvas
+        .copy(
+            &texture,
+            None,
+            Some(Rect::new(0, 0, texture_query.width, texture_query.height)),
+        )
+        .unwrap();
+}
+
 fn main() {
     let mut last_time = Instant::now();
-    let mut dt = Duration::from_secs(0);
+    let target_frame_duration = Duration::from_secs_f32(1.0 / 60.0);
 
     let ctx = sdl2::init().unwrap();
     let video_subsystem = ctx.video().unwrap();
@@ -52,6 +93,7 @@ fn main() {
         .build()
         .unwrap();
 
+    let mut counter: f32 = 0.0;
     let mut canvas = window.into_canvas().build().unwrap();
     let mut player: Entity = Entity::Player(Player::new(0, 0));
     let mut event_pump = ctx.event_pump().unwrap();
@@ -64,8 +106,13 @@ fn main() {
 
     'run: loop {
         let now = Instant::now();
-        dt = now - last_time;
-        last_time = now;
+        let dt = now.duration_since(last_time);
+
+        counter += dt.as_secs_f32();
+
+        if counter > 1000.0 {
+            counter = 0.0;
+        }
 
         for event in event_pump.poll_iter() {
             match event {
@@ -77,26 +124,42 @@ fn main() {
                 Event::KeyDown {
                     keycode: Some(Keycode::W),
                     ..
-                } => scene_manager.get_current_scene().unwrap().get_player().unwrap().move_forward(),
+                } => scene_manager
+                    .get_current_scene()
+                    .unwrap()
+                    .get_player()
+                    .unwrap()
+                    .move_forward(),
+                Event::KeyDown {
+                    keycode: Some(Keycode::S),
+                    ..
+                } => scene_manager
+                    .get_current_scene()
+                    .unwrap()
+                    .get_player()
+                    .unwrap()
+                    .move_backward(),
+                Event::KeyDown {
+                    keycode: Some(Keycode::A),
+                    ..
+                } => scene_manager
+                    .get_current_scene()
+                    .unwrap()
+                    .get_player()
+                    .unwrap()
+                    .move_left(),
+                Event::KeyDown {
+                    keycode: Some(Keycode::D),
+                    ..
+                } => scene_manager
+                    .get_current_scene()
+                    .unwrap()
+                    .get_player()
+                    .unwrap()
+                    .move_right(),
                 _ => {}
             }
         }
-
-        let text = format!(
-            "FPS: {:.1}{}SCENE: {}",
-            1.0 / dt.as_secs_f32(),
-            "\n",
-            scene_manager.get_current_scene().unwrap().name
-        );
-        let surface = font
-            .render(text.as_str())
-            .blended(Color::RGB(255, 0, 0))
-            .unwrap();
-        let texture_creator = canvas.texture_creator();
-        let texture = texture_creator
-            .create_texture_from_surface(&surface)
-            .unwrap();
-        let texture_query = texture.query();
 
         canvas.set_draw_color(Color::RGB(0, 0, 0));
         canvas.clear();
@@ -104,14 +167,19 @@ fn main() {
         scene_manager.update(dt.as_secs_f32());
         scene_manager.draw(&mut canvas);
 
-        canvas
-            .copy(
-                &texture,
-                None,
-                Some(Rect::new(0, 0, texture_query.width, texture_query.height)),
-            )
-            .unwrap();
-
+        debug(
+            &mut canvas,
+            &mut scene_manager,
+            &font,
+            dt.as_secs_f32(),
+            &mut counter,
+        );
         canvas.present();
+
+        last_time = now;
+        let frame_duration = Instant::now().duration_since(last_time);
+        if frame_duration < target_frame_duration {
+            std::thread::sleep(target_frame_duration - frame_duration);
+        }
     }
 }

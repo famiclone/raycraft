@@ -60,7 +60,6 @@ impl Scene {
 pub struct SceneManager {
     scenes: Vec<Scene>,
     current_scene_name: Option<&'static str>,
-    current_scene: Option<Scene>,
 }
 
 impl Updatable for SceneManager {
@@ -83,7 +82,6 @@ impl SceneManager {
     pub fn new() -> Self {
         Self {
             scenes: Vec::new(),
-            current_scene: None,
             current_scene_name: None,
         }
     }
