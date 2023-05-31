@@ -6,17 +6,16 @@ use sdl2::event::Event;
 use sdl2::keyboard::Keycode;
 use sdl2::pixels::Color;
 use sdl2::rect::Rect;
-use sdl2::ttf::Font;
 use std::path::Path;
 use std::time::{Duration, Instant};
 
 mod traits;
-use traits::{Drawable, Updatable};
+use traits::{Drawable, DrawableUpdatable, Movable, Updatable};
 mod player;
 use player::Player;
 
 mod scene_manager;
-use scene_manager::{Scene, SceneManager};
+use scene_manager::{Entity, Scene, SceneManager};
 
 const WINDOW_WIDTH: u32 = 800;
 const WINDOW_HEIGHT: u32 = 600;
@@ -54,12 +53,13 @@ fn main() {
         .unwrap();
 
     let mut canvas = window.into_canvas().build().unwrap();
-    let mut player = Player::new(0, 0);
+    let mut player: Entity = Entity::Player(Player::new(0, 0));
     let mut event_pump = ctx.event_pump().unwrap();
 
     let mut scene_manager = SceneManager::new();
-    let mut scene = Scene::new("main");
-    scene_manager.add_scene("main", scene);
+    let mut main_scene = Scene::new("main");
+    main_scene.add_entity(player);
+    scene_manager.add_scene(main_scene);
     scene_manager.set_current_scene("main");
 
     'run: loop {
@@ -74,6 +74,10 @@ fn main() {
                     keycode: Some(Keycode::Escape),
                     ..
                 } => break 'run,
+                Event::KeyDown {
+                    keycode: Some(Keycode::W),
+                    ..
+                } => scene_manager.get_current_scene().unwrap().get_player().unwrap().move_forward(),
                 _ => {}
             }
         }
@@ -82,7 +86,7 @@ fn main() {
             "FPS: {:.1}{}SCENE: {}",
             1.0 / dt.as_secs_f32(),
             "\n",
-            scene_manager.get_current_scene().unwrap()
+            scene_manager.get_current_scene().unwrap().name
         );
         let surface = font
             .render(text.as_str())
