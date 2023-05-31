@@ -14,6 +14,8 @@ pub trait Movable {
     fn move_backward(&mut self);
     fn move_left(&mut self);
     fn move_right(&mut self);
+    fn stop_horizontal (&mut self);
+    fn stop_vertical (&mut self);
 }
 
 pub trait DrawableUpdatable: Drawable + Updatable {}

@@ -17,6 +17,9 @@ use traits::{Drawable, DrawableUpdatable, Movable, Updatable};
 mod player;
 use player::Player;
 
+mod controller;
+use controller::KeyboardState;
+
 mod scene_manager;
 use scene_manager::{Entity, Scene, SceneManager};
 
@@ -95,8 +98,9 @@ fn main() {
 
     let mut counter: f32 = 0.0;
     let mut canvas = window.into_canvas().build().unwrap();
-    let mut player: Entity = Entity::Player(Player::new(0, 0));
+    let mut player: Entity = Entity::Player(Player::new(0.0, 0.0));
     let mut event_pump = ctx.event_pump().unwrap();
+    let mut keyboard_state = KeyboardState::new();
 
     let mut scene_manager = SceneManager::new();
     let mut main_scene = Scene::new("main");
@@ -121,44 +125,71 @@ fn main() {
                     keycode: Some(Keycode::Escape),
                     ..
                 } => break 'run,
+                //Event::KeyDown {
+                //    keycode: Some(Keycode::W),
+                //    ..
+                //} => scene_manager
+                //    .get_current_scene()
+                //    .unwrap()
+                //    .get_player()
+                //    .unwrap()
+                //    .move_forward(),
                 Event::KeyDown {
-                    keycode: Some(Keycode::W),
+                    keycode: Some(keycode),
                     ..
-                } => scene_manager
-                    .get_current_scene()
-                    .unwrap()
-                    .get_player()
-                    .unwrap()
-                    .move_forward(),
-                Event::KeyDown {
-                    keycode: Some(Keycode::S),
+                } => keyboard_state.handle_key_down(keycode),
+                Event::KeyUp {
+                    keycode: Some(keycode),
                     ..
-                } => scene_manager
-                    .get_current_scene()
-                    .unwrap()
-                    .get_player()
-                    .unwrap()
-                    .move_backward(),
-                Event::KeyDown {
-                    keycode: Some(Keycode::A),
-                    ..
-                } => scene_manager
-                    .get_current_scene()
-                    .unwrap()
-                    .get_player()
-                    .unwrap()
-                    .move_left(),
-                Event::KeyDown {
-                    keycode: Some(Keycode::D),
-                    ..
-                } => scene_manager
-                    .get_current_scene()
-                    .unwrap()
-                    .get_player()
-                    .unwrap()
-                    .move_right(),
+                } => keyboard_state.handle_key_up(keycode),
                 _ => {}
             }
+            if keyboard_state.is_key_pressed(Keycode::S) {
+                scene_manager
+                    .get_current_scene()
+                    .unwrap()
+                    .get_player()
+                    .unwrap()
+                    .move_backward();
+            } else if keyboard_state.is_key_pressed(Keycode::W) {
+                scene_manager
+                    .get_current_scene()
+                    .unwrap()
+                    .get_player()
+                    .unwrap()
+                    .move_forward();
+            } else {
+                scene_manager
+                    .get_current_scene()
+                    .unwrap()
+                    .get_player()
+                    .unwrap()
+                    .stop_vertical();
+            }
+
+            if keyboard_state.is_key_pressed(Keycode::A) {
+                scene_manager
+                    .get_current_scene()
+                    .unwrap()
+                    .get_player()
+                    .unwrap()
+                    .move_left();
+            } else if keyboard_state.is_key_pressed(Keycode::D) {
+                scene_manager
+                    .get_current_scene()
+                    .unwrap()
+                    .get_player()
+                    .unwrap()
+                    .move_right();
+            } else {
+                scene_manager
+                    .get_current_scene()
+                    .unwrap()
+                    .get_player()
+                    .unwrap()
+                    .stop_horizontal();
+            }
+
         }
 
         canvas.set_draw_color(Color::RGB(0, 0, 0));
