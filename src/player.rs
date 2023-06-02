@@ -36,10 +36,11 @@ impl Player {
 impl Drawable for Player {
     fn draw(&self, canvas: &mut Canvas<Window>) {
         canvas.set_draw_color(Color::RGB(0, 255, 0));
+        // apply rotation
         canvas.fill_rect(self.sprite).unwrap();
         canvas.draw_line(
-            sdl2::rect::Point::new(self.sprite.x, self.sprite.y),
-            sdl2::rect::Point::new(self.sprite.x + 16, self.sprite.y + 16),
+            sdl2::rect::Point::new(self.sprite.x, self.sprite.y + 8),
+            sdl2::rect::Point::new(self.sprite.x + 16 + 32, self.sprite.y + 8),
         ).unwrap();
     }
 }
