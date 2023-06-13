@@ -1,9 +1,9 @@
-use crate::traits::{Drawable, Updatable, DrawableUpdatable, Movable, Person};
+use crate::traits::{Drawable, DrawableUpdatable, Movable, Person, Updatable};
 
-use sdl2::render::Canvas;
-use sdl2::video::Window;
 use sdl2::pixels::Color;
 use sdl2::rect::Rect;
+use sdl2::render::Canvas;
+use sdl2::video::Window;
 
 pub struct Player {
     speed: f32,
@@ -11,6 +11,7 @@ pub struct Player {
     vel_x: f32,
     vel_y: f32,
     rotation: f32,
+    pivot: (i32, i32),
 }
 
 impl Player {
@@ -21,6 +22,7 @@ impl Player {
             vel_x: 0.0,
             vel_y: 0.0,
             rotation: 0.0,
+            pivot: (8, 8),
         }
     }
 
@@ -36,12 +38,13 @@ impl Player {
 impl Drawable for Player {
     fn draw(&self, canvas: &mut Canvas<Window>) {
         canvas.set_draw_color(Color::RGB(0, 255, 0));
-        // apply rotation
         canvas.fill_rect(self.sprite).unwrap();
-        canvas.draw_line(
-            sdl2::rect::Point::new(self.sprite.x, self.sprite.y + 8),
-            sdl2::rect::Point::new(self.sprite.x + 16 + 32, self.sprite.y + 8),
-        ).unwrap();
+        canvas
+            .draw_line(
+                sdl2::rect::Point::new(self.sprite.x, self.sprite.y + 8),
+                sdl2::rect::Point::new(self.sprite.x + 16 + 32, self.sprite.y + 8),
+            )
+            .unwrap();
     }
 }
 
@@ -74,18 +77,16 @@ impl Movable for Player {
         self.vel_x = 1.0;
     }
 
-    fn stop_horizontal (&mut self) {
+    fn stop_horizontal(&mut self) {
         self.vel_x = 0.0;
     }
 
-    fn stop_vertical (&mut self) {
+    fn stop_vertical(&mut self) {
         self.vel_y = 0.0;
     }
 
-    fn set_angle(&mut self, angle: f32) {
-        self.rotation = angle;
+    fn rotate(&mut self, theta: f32) {
     }
-
 }
 
 impl DrawableUpdatable for Player {}
